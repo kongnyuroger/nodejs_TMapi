@@ -1,17 +1,17 @@
 import express from "express"
 import tasks from "../dumydb.js";
-
+import authenticateToken from "../middleware/auth.js";
 const router = express.Router();
 
 
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
+router.get('/', authenticateToken , function(req, res, next) {
   res.json(tasks);
 });
 
 //add task
-router.post('/', function(req, res, next) {
+router.post('/', authenticateToken, function(req, res, next) {
   const {title, description} = req.body;
   const newTask = {
     id: tasks.length + 1,
