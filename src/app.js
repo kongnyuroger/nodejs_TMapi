@@ -3,6 +3,7 @@ import path from 'path'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan';
 import express from 'express';
+import authrouter from './routes/auth.js';
 import indexRouter  from './routes/index.js';
 import usersRouter from  './routes/tasks.js';
 
@@ -18,7 +19,7 @@ app.use(cookieParser());
 
 app.use('/', indexRouter);
 app.use('/tasks', usersRouter);
-
+app.use('/auth', authrouter)
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
