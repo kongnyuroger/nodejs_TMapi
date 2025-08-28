@@ -6,7 +6,7 @@ const router = express.Router();
 
 
 /* GET users listing. */
-router.get('/', authenticateToken , function(req, res, next) {
+router.get('/', authenticateToken, function(req, res, next) {
   res.json(tasks);
 });
 
