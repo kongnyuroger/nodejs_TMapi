@@ -1,57 +1,73 @@
 import express from "express"
-import tasks from "../dumydb.js";
+//import tasks from "../dumydb.js";
 import authenticateToken from "../middleware/auth.js";
 const router = express.Router();
+import pool from "../database/db.js";
 
 
 
 /* GET users listing. */
-router.get('/', authenticateToken, function(req, res, next) {
-  res.json(tasks);
+router.get('/', async function(req, res, next) {
+  try{ 
+  const tasks = await pool.query('select * from tasks ')
+  res.json(tasks.rows);
+  }catch(err){
+    res.json({error: err.message})
+  }
 });
 
 //add task
-router.post('/', authenticateToken, function(req, res, next) {
+router.post('/', authenticateToken, async function(req, res, next) {
   const {title, description} = req.body;
-  const newTask = {
-    id: tasks.length + 1,
-    title,
-    description,
-    status: "pending",
-    created_at: new Date()
+  const userId = req.user.id
+  if (!title || !description){
+    res.json("title and description required")
   }
-  tasks.push(newTask);
-  res.json(newTask)
+try{ 
+  const newTask = await pool.query('insert into tasks (title, content, user_id) values($1, $2, $3) returning *', [title, description, userId]);
+  console.log(newTask)
+  res.json(newTask.rows)
+}catch(err){
+  res.json({erro:err})
+}
 });
 
 //update task
-router.put('/:id', function(req, res, next) {
-  const task = tasks.find(t => t.id === parseInt(req.params.id) )
+router.put('/:id', authenticateToken, async function(req, res, next) {
+  const gettask =  await pool.query('SELECT * from tasks where id = $1',[parseInt(req.params.id)])
+  const task = gettask.rows[0]
    if(!task){
     return res.status(400).json({message: "task not found"})
    }
 
    task.title = req.body.title || task.title
-   task.description = req.body.description || task.description
+   task.content = req.body.description || task.content
 
    return res.status(202).json(task)
 });
 
-router.delete('/:id', function(req, res, next){
-  const task = tasks.find(t => t.id === parseInt(req.params.id) );
+router.delete('/:id', authenticateToken, async function(req, res, next){
+  const gettask =  await pool.query('SELECT * from tasks where id = $1',[parseInt(req.params.id)])
+
+  const task = gettask.rows[0]
   if(!task){
     return res.status(400).json({error: "task not found"})
    }
-
-  return res.json(tasks.filter(t => t.id !== parseInt(req.params.id)))
+  await pool.query('delete from tasks where  id = $1',[task.id])
+  return res.json({message: "delete successful"})
 })
 
-router.put('/completed/:id', function(req, res, next){
-  const task = tasks.find(t => t.id === parseInt(req.params.id) );
+router.put('/completed/:id', async function(req, res, next){
+   const gettask =  await pool.query('SELECT * from tasks where id = $1',[parseInt(req.params.id)])
+  const task = gettask.rows[0]
+  try{ 
   if(!task){
     return res.status(400).json({error: "task not found"})
    }
-  task.status = "completed";
-  return res.status(200).json(task);
+  const competed = await pool.query(`update tasks set status = 'completed' where id = $1 returning *`,[task.id])
+  return res.status(200).json(competed.rows);
+  }catch(err){
+    return res.json({error: err.message})
+  }
 })
 export default router;

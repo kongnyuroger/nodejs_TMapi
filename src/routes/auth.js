@@ -2,13 +2,16 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import pool from '../database/db.js'
+import authlimit from '../middleware/ratelimiting.js'
+
+import 'dotenv/config'
 
 
 const router = express()
 
 const users = [{username: "roger", password:"12345678"}];
 
-router.post('/register', async function(req, res, next){
+router.post('/register', authlimit, async function(req, res, next){
   try{ 
     const {username, password} = req.body;
     if (!username || !password) {
@@ -45,7 +48,7 @@ router.post('/register', async function(req, res, next){
 })
 
 
-router.post('/login', async (req, res) => {
+router.post('/login', authlimit, async (req, res) => {
   try{ 
     const {username, password} = req.body;
     if (!username || !password) {
@@ -65,7 +68,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, username: user.username },
-      'secret_key',
+      process.env.SECRET_KEY,
       { expiresIn: '1h' }
     );
 
