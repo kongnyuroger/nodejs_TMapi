@@ -1,0 +1,19 @@
+A TASK MANAGMENT API
+
+FEATURES
+===================================================
+-->USER AUTHENTICATION
+-->USERS CAN CREAT, UPDATE, DELETE TASK
+-->USERS CHANGE TASK STATUS TO COMPLETE
+-->USERS CAN LIST ALL CREATED TASK
+
+
+ROUTES
+==================================================
+POST /auth/register                     register a user accept. inputs (username, password) 
+POST /auth/login                        login a user accept. inputs (username, password) 
+POST /tasks                              create tasks. inputs (title, description) 
+GET /tasks                              get all tasks 
+PUT /tasks/[id]                         update task by id
+PUT /tasks/completed/[id]                changed task status to complet
+DELETE /tasks/[id]                       delete task by id
