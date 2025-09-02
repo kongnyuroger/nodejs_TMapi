@@ -1,0 +1,31 @@
+import pool from "./db.js";
+
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users(
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password text UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(100)  NOT NULL,
+        content text NOT NULL,
+        status VARCHAR(25)  NOT NULL default 'pending',
+        user_id int references users(id) not null,
+        created_at date default current_date
+      );
+    `);
+
+    console.log("Tables are ready");
+  } catch (err) {
+    console.error("Error creating tables:", err);
+  }
+}
+
+export default initDB;

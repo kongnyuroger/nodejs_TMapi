@@ -3,13 +3,14 @@ import path from 'path'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan';
 import express from 'express';
-
+import initDB from './database/dbinit';
 import authrouter from './routes/auth.js';
 import indexRouter  from './routes/index.js';
 import usersRouter from  './routes/tasks.js';
 
-import authenticateToken from './middleware/auth.js';
 const app = express();
+
+initDB()
 
 // view engine setup
 app.set('view engine', 'jade');
