@@ -9,7 +9,7 @@ import pool from "../database/db.js";
 /* GET users listing. */
 router.get('/', async function(req, res, next) {
   try{ 
-  const tasks = await pool.query('select * from tasks ')
+  const tasks = await pool.query('select * from tasks where user_id = $1',[req.user.id])
   res.json(tasks.rows);
   }catch(err){
     res.json({error: err.message})
