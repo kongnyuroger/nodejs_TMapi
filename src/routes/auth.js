@@ -3,13 +3,13 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import pool from '../database/db.js'
 import authlimit from '../middleware/ratelimiting.js'
+import { verifyPassword, hashPassword } from '../utils/crypto.js'
 
 import 'dotenv/config'
 
 
 const router = express()
 
-const users = [{username: "roger", password:"12345678"}];
 
 router.post('/register', authlimit, async function(req, res, next){
   try{ 
@@ -18,7 +18,6 @@ router.post('/register', authlimit, async function(req, res, next){
         return res.status(400).json({ error: 'username and password required' });
     }
 
-    const user = users.find (u => u.username === username)
 //useing postgress
 
     const checkExist = await pool.query('SELECT * from users where username = $1',[username])
@@ -28,13 +27,13 @@ router.post('/register', authlimit, async function(req, res, next){
         return res.status(400).json({ error: 'password must be at least 8 characters' });    
     }
 
-    const hashPassword = await bcrypt.hash(password, 10)
-
+    const hashPass= await hashPassword(password)
+    console.log(hashPass)
     if(checkExist.rows.length === 0){
         
         const newUser = await pool.query(
       'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username',
-      [username, hashPassword]
+      [username, hashPass]
     );
     return res.json({message: "successfuly registered"})
     }
@@ -61,7 +60,7 @@ router.post('/login', authlimit, async (req, res) => {
       return res.status(401).json({ error: 'invalid credentials' });
     }
     const user = checkExist.rows[0]
-    const passwordOk = await bcrypt.compare(password, user.password);
+    const passwordOk = await verifyPassword(password);
     if (!passwordOk) {
       return res.status(401).json({ error: 'invalid credentials' });
     }
