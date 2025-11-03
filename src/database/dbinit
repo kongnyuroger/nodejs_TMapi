@@ -2,24 +2,29 @@ import pool from "./db.js";
 
 async function initDB() {
   try {
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users(
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(50) UNIQUE NOT NULL,
         password text UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS tasks (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(100)  NOT NULL,
-        content text NOT NULL,
-        status VARCHAR(25)  NOT NULL default 'pending',
-        user_id int references users(id) not null,
-        created_at date default current_date
-      );
+     CREATE TABLE IF NOT EXISTS tasks (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      due_date TIMESTAMP,
+      status VARCHAR(50) DEFAULT 'todo' CHECK (status IN ('todo', 'in-progress', 'done')),
+      assigned_to INTEGER REFERENCES users(id),
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
     `);
 
     console.log("Tables are ready");

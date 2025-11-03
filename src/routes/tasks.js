@@ -17,20 +17,35 @@ router.get('/', async function(req, res, next) {
 });
 
 //add task
-router.post('/', authenticateToken, async function(req, res, next) {
-  const {title, description} = req.body;
-  const userId = req.user.id
-  if (!title || !description){
-    res.json("title and description required")
+router.post('/', authenticateToken, async function (req, res, next) {
+  try {
+    const { title, description, due_date, assigned_to } = req.body;
+    const created_by = req.user.id;
+
+    
+    if (!title || !description) {
+      return res.status(400).json({ error: "Title and description are required" });
+    }
+
+    const newTask = await pool.query(
+      `
+      INSERT INTO tasks (title, description, due_date, status, assigned_to, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+      `,
+      [title, description, due_date || null, 'todo', assigned_to || null, created_by]
+    );
+    return res.status(201).json({
+      message: "Task created successfully",
+      task: newTask.rows[0],
+    });
+
+  } catch (err) {
+    console.error("Error creating task:", err);
+    return res.status(500).json({ error: "Internal server error", message: err.message });
   }
-try{ 
-  const newTask = await pool.query('insert into tasks (title, content, user_id) values($1, $2, $3) returning *', [title, description, userId]);
-  console.log(newTask)
-  res.json(newTask.rows)
-}catch(err){
-  res.json({erro:err})
-}
 });
+
 
 //update task
 router.put('/:id', authenticateToken, async function(req, res, next) {

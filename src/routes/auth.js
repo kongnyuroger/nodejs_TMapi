@@ -13,27 +13,23 @@ const router = express()
 
 router.post('/register', authlimit, async function(req, res, next){
   try{ 
-    const {username, password} = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'username and password required' });
+    const {username, email, password} = req.body;
+    if (!username || !password || !email) {
+        return res.status(400).json({ error: 'username, email and password required' });
     }
-
+    console.log(username, password, email)
 //useing postgress
-
-    const checkExist = await pool.query('SELECT * from users where username = $1',[username])
-
-
+    const checkExist = await pool.query('SELECT * from users where email = $1',[email])
     if(password.length < 8){
         return res.status(400).json({ error: 'password must be at least 8 characters' });    
     }
-
     const hashPass= await hashPassword(password)
     console.log(hashPass)
     if(checkExist.rows.length === 0){
         
         const newUser = await pool.query(
-      'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username',
-      [username, hashPass]
+      'INSERT INTO users (username,email, password) VALUES ($1, $2, $3) RETURNING id, username, email',
+      [username, email, hashPass]
     );
     return res.json({message: "successfuly registered"})
     }
@@ -49,20 +45,21 @@ router.post('/register', authlimit, async function(req, res, next){
 
 router.post('/login', authlimit, async (req, res) => {
   try{ 
-    const {username, password} = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'username and password required' });
+    const {email, password} = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email and password required' });
     }
 
-    const checkExist = await pool.query('SELECT * from users where username = $1',[username])
+    const checkExist = await pool.query('SELECT * from users where email = $1',[email])
+    
+  const user = checkExist.rows[0];
+  if (!user) {
+    return res.status(401).json({ error: 'User with this email does not exist' });
+  }
 
-    if (checkExist.rows === 0) {
-      return res.status(401).json({ error: 'invalid credentials' });
-    }
-    const user = checkExist.rows[0]
-    const passwordOk = await verifyPassword(password);
+    const passwordOk = await verifyPassword(password, user.password);
     if (!passwordOk) {
-      return res.status(401).json({ error: 'invalid credentials' });
+      return res.status(401).json({ error: 'Check password and try again' });
     }
 
     const token = jwt.sign(
