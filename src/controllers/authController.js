@@ -4,16 +4,8 @@ import { hashPassword, verifyPassword } from '../utils/crypto.js';
 
 export const registerUser = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    if (!username || !password || !email) {
-      return res.status(400).json({ error: 'username, email and password required' });
-    }
-
+    const { username, email, password } = req.body; 
     const checkExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'password must be at least 8 characters' });
-    }
-
     if (checkExist.rows.length === 0) {
       const hashPass = await hashPassword(password);
       await pool.query(
@@ -34,9 +26,6 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'email and password required' });
-    }
 
     const checkExist = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     const user = checkExist.rows[0];

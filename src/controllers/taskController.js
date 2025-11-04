@@ -19,10 +19,6 @@ export const createTask = async (req, res) => {
     const { title, description, due_date, assigned_to } = req.body;
     const created_by = req.user.id;
 
-    if (!title || !description) {
-      return res.status(400).json({ error: 'Title and description are required' });
-    }
-
     const newTask = await pool.query(
       `INSERT INTO tasks (title, description, due_date, status, assigned_to, created_by)
        VALUES ($1, $2, $3, $4, $5, $6)
