@@ -32,54 +32,133 @@ export const createTask = async (req, res) => {
   }
 };
 
-// Update a task
+
+
+// Validate status transitions
+const validTransition = (oldStatus, newStatus) => {
+  const transitions = {
+    todo: ["in-progress", "done"],
+    "in-progress": ["done"],
+    done: [], // only PATCH /complete can handle 'done' → 'todo' reset logic
+  };
+  return transitions[oldStatus]?.includes(newStatus);
+};
+
+// PUT /tasks/:id
 export const updateTask = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const { title, description, due_date, status } = req.body;
+  const client = await pool.connect();
+
   try {
-    const gettask = await pool.query(
-      'SELECT * FROM tasks WHERE id = $1 AND created_by = $2',
-      [parseInt(req.params.id), req.user.id]
+    await client.query("BEGIN");
+
+    // 1️ Fetch task and check ownership
+    const taskRes = await client.query(
+      "SELECT * FROM tasks WHERE id = $1 AND (created_by = $2 OR assigned_to = $2)",
+      [parseInt(id), userId]
     );
-    const task = gettask.rows[0];
+    const task = taskRes.rows[0];
 
-    if (!task) return res.status(400).json({ message: 'task not found' });
+    if (!task) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Not authorized or task not found" });
+    }
 
-    const title = req.body.title || task.title;
-    const description = req.body.description || task.description;
-    const due_date = req.body.due_date || task.due_date;
-    const status = req.body.status || task.status;
+    // 2️Validate future due date
+    if (due_date && new Date(due_date) <= new Date()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Due date must be in the future" });
+    }
 
-    const updated = await pool.query(
-      `UPDATE tasks SET title = $1, description = $2, due_date = $3, status = $4 WHERE id = $5 RETURNING *`,
+    // 3️ Validate status transition
+    if (status && !validTransition(task.status, status)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: `Invalid status transition: ${task.status} → ${status}`,
+      });
+    }
+
+    // 4️ Perform update
+    const updatedTask = await client.query(
+      `UPDATE tasks
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           due_date = COALESCE($3, due_date),
+           status = COALESCE($4, status)
+       WHERE id = $5
+       RETURNING *`,
       [title, description, due_date, status, task.id]
     );
 
-    res.status(202).json(updated.rows[0]);
+    await client.query("COMMIT");
+    return res.status(200).json({
+      message: "Task updated successfully",
+      task: updatedTask.rows[0],
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    await client.query("ROLLBACK");
+    console.error("Update task error:", err);
+    return res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 };
 
-// Change task status
-export const changeStatus = async (req, res) => {
+
+// PATCH /tasks/:id/complete
+export const completeTask = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const client = await pool.connect();
+
   try {
-    const { status } = req.body;
-    const taskRes = await pool.query(
-      'SELECT * FROM tasks WHERE id = $1 AND (created_by = $2 OR assigned_to = $2)',
-      [parseInt(req.params.id), req.user.id]
+    await client.query("BEGIN");
+
+    // 1️ Fetch task
+    const taskRes = await client.query(
+      "SELECT * FROM tasks WHERE id = $1 AND (created_by = $2 OR assigned_to = $2)",
+      [parseInt(id), userId]
     );
     const task = taskRes.rows[0];
-    if (!task) return res.status(403).json({ error: 'Not authorized or task not found' });
 
-    const updated = await pool.query(
-      `UPDATE tasks SET status = $1 WHERE id = $2 RETURNING *`,
-      [status, task.id]
+    if (!task) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Not authorized or task not found" });
+    }
+
+    // 2️ Skip if already completed
+    if (task.status === "done") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Task is already completed" });
+    }
+
+    // 3️Update status and timestamp
+    const result = await client.query(
+      `UPDATE tasks
+       SET status = 'done',
+           completed_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [task.id]
     );
 
-    res.status(200).json(updated.rows[0]);
+    await client.query("COMMIT");
+    return res.status(200).json({
+      message: "Task marked as completed",
+      task: result.rows[0],
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    await client.query("ROLLBACK");
+    console.error("Complete task error:", err);
+    return res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 };
+
+
 
 // Delete task
 export const deleteTask = async (req, res) => {

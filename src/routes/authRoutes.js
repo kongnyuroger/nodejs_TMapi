@@ -7,6 +7,6 @@ import validate from '../middleware/validate.js';
 const router = express.Router();
 
 router.post('/register', registerValidator, validate, authlimit, registerUser);
-router.post('/login', authlimit, loginUser);
+router.post('/login',loginValidator, validate, authlimit, loginUser);
 
 export default router;
