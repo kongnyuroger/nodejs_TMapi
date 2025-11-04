@@ -175,19 +175,30 @@ router.put("/todo/:id", authenticateToken, async function (req, res, next) {
   }
 });
 
-//delete task
-router.delete("/:id", authenticateToken, async function (req, res, next) {
-  const taskRes = await pool.query(
-      "SELECT * FROM tasks WHERE id = $1 AND created_by = $2 ",
+
+
+// delete task
+router.delete("/delete/:id", authenticateToken, async function (req, res, next) {
+  try {
+    const taskRes = await pool.query(
+      "SELECT * FROM tasks WHERE id = $1 AND (created_by = $2 OR assigned_to = $2)",
       [parseInt(req.params.id), req.user.id]
     );
+
     const task = taskRes.rows[0];
 
-  if (!task) {
-    return res.status(400).json({ error: "task not found" });
+    if (!task) {
+      return res.status(403).json({ error: "Not authorized or task not found" });
+    }
+
+    await pool.query("DELETE FROM tasks WHERE id = $1", [task.id]);
+
+    return res.json({ message: "delete successful" });
+
+  } catch (err) {
+    console.error("delete task error:", err);
+    return res.status(500).json({ error: err.message });
   }
-  await pool.query("delete from tasks where  id = $1", [task.id]);
-  return res.json({ message: "delete successful" });
 });
 
 export default router;
