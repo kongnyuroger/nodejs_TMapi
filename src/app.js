@@ -3,10 +3,8 @@ import cookieParser from 'cookie-parser'
 import logger from 'morgan';
 import express from 'express';
 import initDB from './database/dbinit';
-import authrouter from './routes/auth.js';
-import indexRouter  from './routes/index.js';
-import usersRouter from  './routes/tasks.js';
-
+import authRoutes from './routes/authRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 const app = express();
 
 initDB()
@@ -19,9 +17,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/', indexRouter);
-app.use('/tasks', usersRouter);
-app.use('/auth', authrouter)
+
+app.use('/tasks', taskRoutes);
+app.use('/auth', authRoutes)
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
