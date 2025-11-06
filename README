@@ -1,22 +1,72 @@
-A TASK MANAGMENT API
+# Clone the repo
+git clone https://github.com/yourusername/tmapi.git
+cd tmapi
 
-FEATURES
-===================================================
--->USER AUTHENTICATION
--->USERS CAN CREAT, UPDATE, DELETE TASK
--->USERS CHANGE TASK STATUS TO COMPLETE
--->USERS CAN LIST ALL CREATED TASK
+# Install dependencies
+npm install
 
+# Create .env file in src/:
+# DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, SECRET_KEY, PORT
 
-ROUTES
-==================================================
+# Start the server
+npm run dev
 
-https://nodejs-tmapi.onrender.com
+Tables are created automatically if they do not exist.
+Swagger docs available at: http://localhost:5000/api-docs
 
-POST /auth/register                     register a user accept. inputs (username, password) 
-POST /auth/login                        login a user accept. inputs (username, password) 
-POST /tasks                              create tasks. inputs (title, description) 
-GET /tasks                              get all tasks 
-PUT /tasks/[id]                         update task by id
-PUT /tasks/completed/[id]                changed task status to complet
-DELETE /tasks/[id]                       delete task by id
+⚡ Features
+
+User registration & login (JWT-based)
+
+Password hashing (bcrypt)
+
+Create, update, delete, and view tasks
+
+Assign tasks to users
+
+Task status: todo, in-progress, done
+
+Pagination & sorting for task lists
+
+Input validation for title, email, and due_date
+
+Rate limiting middleware
+
+Only creator or assignee can modify tasks
+
+📡 API Endpoints
+Auth
+Method	Endpoint	Description
+POST	/auth/register	Register a new user
+POST	/auth/login	Login user, returns JWT token
+Tasks
+Method	Endpoint	Description
+GET	/tasks	Get tasks (pagination & sorting)
+POST	/tasks	Create a task
+PUT	/tasks/:id	Update a task (title, description, due_date, status)
+PATCH	/tasks/:id/complete	Mark task as done
+PUT	/tasks/:id/in-progress	Mark task as in-progress
+PUT	/tasks/:id/todo	Reset task to todo
+DELETE	/tasks/delete/:id	Delete a task
+
+All task endpoints require Authorization: Bearer <token>
+
+🗂️ Folder Structure
+
+src/
+ ├── app.js                # Express app
+ ├── server.js             # Starts server
+ ├── routes/
+ │   ├── authRoutes.js     # Auth endpoints
+ │   └── taskRoutes.js     # Task endpoints
+ ├── controllers/
+ │   ├── authController.js
+ │   └── taskController.js
+ ├── middleware/
+ │   ├── auth.js           # JWT authentication
+ │   └── ratelimiting.js
+ ├── utils/
+ │   └── crypto.js         # Hashing & verification
+ ├── database/
+ │   └── db.js             # PostgreSQL connection & table setup
+ └── .env
