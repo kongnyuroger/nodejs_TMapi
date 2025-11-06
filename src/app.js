@@ -5,6 +5,7 @@ import express from 'express';
 import initDB from './database/dbinit';
 import authRoutes from './routes/authRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import { swaggerDocs } from './utils/swagger.js';
 const app = express();
 
 initDB()
@@ -18,8 +19,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 
-app.use('/tasks', taskRoutes);
-app.use('/auth', authRoutes)
+app.use('/api/tasks', taskRoutes);
+app.use('/api/auth', authRoutes);
+
+swaggerDocs(app)
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));

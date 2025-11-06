@@ -1,15 +1,50 @@
-import pool from '../database/db.js';
+import pool from "../database/db.js";
 
-// Get all tasks for the logged-in user
+// GET /tasks?limit=10&offset=0&sort_by=due_date&order=asc
 export const getTasks = async (req, res) => {
+  const userId = req.user.id;
+  let {
+    limit = 10,
+    offset = 0,
+    sort_by = "due_date",
+    order = "asc",
+  } = req.query;
+
+  // sanitize input
+  limit = parseInt(limit);
+  offset = parseInt(offset);
+  order = order.toLowerCase() === "desc" ? "desc" : "asc";
+  const allowedSortFields = ["due_date", "status", "created_at"];
+  if (!allowedSortFields.includes(sort_by)) sort_by = "due_date";
+
   try {
-    const tasks = await pool.query(
-      'SELECT * FROM tasks WHERE created_by = $1 OR assigned_to = $1',
-      [req.user.id]
+    // Fetch total count for pagination info
+    const countRes = await pool.query(
+      "SELECT COUNT(*) FROM tasks WHERE created_by = $1 OR assigned_to = $1",
+      [userId]
     );
-    res.json(tasks.rows);
+    const total = parseInt(countRes.rows[0].count);
+
+    // Fetch paginated tasks
+    const taskRes = await pool.query(
+      `SELECT *
+       FROM tasks
+       WHERE created_by = $1 OR assigned_to = $1
+       ORDER BY ${sort_by} ${order}
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    return res.status(200).json({
+      total,
+      limit,
+      offset,
+      count: taskRes.rows.length,
+      tasks: taskRes.rows,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching tasks:", err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -23,16 +58,25 @@ export const createTask = async (req, res) => {
       `INSERT INTO tasks (title, description, due_date, status, assigned_to, created_by)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [title, description, due_date || null, 'todo', assigned_to || null, created_by]
+      [
+        title,
+        description,
+        due_date || null,
+        "todo",
+        assigned_to || null,
+        created_by,
+      ]
     );
 
-    res.status(201).json({ message: 'Task created successfully', task: newTask.rows[0] });
+    res
+      .status(201)
+      .json({ message: "Task created successfully", task: newTask.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error', message: err.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: err.message });
   }
 };
-
-
 
 // Validate status transitions
 const validTransition = (oldStatus, newStatus) => {
@@ -63,7 +107,9 @@ export const updateTask = async (req, res) => {
 
     if (!task) {
       await client.query("ROLLBACK");
-      return res.status(403).json({ error: "Not authorized or task not found" });
+      return res
+        .status(403)
+        .json({ error: "Not authorized or task not found" });
     }
 
     // 2️Validate future due date
@@ -106,7 +152,6 @@ export const updateTask = async (req, res) => {
   }
 };
 
-
 // PATCH /tasks/:id/complete
 export const completeTask = async (req, res) => {
   const { id } = req.params;
@@ -125,7 +170,9 @@ export const completeTask = async (req, res) => {
 
     if (!task) {
       await client.query("ROLLBACK");
-      return res.status(403).json({ error: "Not authorized or task not found" });
+      return res
+        .status(403)
+        .json({ error: "Not authorized or task not found" });
     }
 
     // 2️ Skip if already completed
@@ -158,20 +205,21 @@ export const completeTask = async (req, res) => {
   }
 };
 
-
-
 // Delete task
 export const deleteTask = async (req, res) => {
   try {
     const taskRes = await pool.query(
-      'SELECT * FROM tasks WHERE id = $1 AND (created_by = $2 OR assigned_to = $2)',
+      "SELECT * FROM tasks WHERE id = $1 AND (created_by = $2 OR assigned_to = $2)",
       [parseInt(req.params.id), req.user.id]
     );
     const task = taskRes.rows[0];
-    if (!task) return res.status(403).json({ error: 'Not authorized or task not found' });
+    if (!task)
+      return res
+        .status(403)
+        .json({ error: "Not authorized or task not found" });
 
-    await pool.query('DELETE FROM tasks WHERE id = $1', [task.id]);
-    res.json({ message: 'delete successful' });
+    await pool.query("DELETE FROM tasks WHERE id = $1", [task.id]);
+    res.json({ message: "delete successful" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
