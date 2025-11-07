@@ -41,18 +41,16 @@ Rate limiting middleware
 
 Only creator or assignee can modify tasks
 
-##API Endpoints
-###Auth
+## API Endpoints
 ####    Method	    Endpoint	        Description
-        POST	/api/auth/register	Register a new user(username,email,password)
-        POST	/api/auth/login	Login user,(email,password), returns JWT token 
-        ###Tasks
-       ###Method	Endpoint	Description
-            GET	/tasks	Get tasks (pagination & sorting)
-            POST	/api/tasks	Create a task (title, description, due_date, assigned_to(id))
-            PUT	/api/tasks/:id	Update a task (title, description, due_date, status)
-            PATCH	/api/tasks/:id/complete	Mark task as done
-            DELETE	/api/tasks/delete/:id	Delete a task
+        POST	/api/auth/register	      Register a new user(username,email,password)
+        POST	/api/auth/login	         Login user,(email,password), returns JWT token 
+       
+        GET	   /api/tasks	               Get tasks (pagination & sorting)
+        POST	/api/tasks	              Create a task (title, description, due_date, assigned_to(id))
+        PUT	   /api/tasks/:id	            Update a task (title, description, due_date, status)
+        PATCH	/api/tasks/:id/complete	   Mark task as done
+        DELETE	/api/tasks/delete/:id	Delete a task
 
 All task endpoints require Authorization: Bearer <token>
 
