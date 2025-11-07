@@ -57,19 +57,19 @@ All task endpoints require Authorization: Bearer <token>
 #Folder Structure
 
 src/
- ├── app.js                ### Express app
- ├── server.js             ### Starts server
+ ├── app.js                
+ ├── server.js             
  ├── routes/
- │   ├── authRoutes.js     ### Auth endpoints
- │   └── taskRoutes.js     ### Task endpoints
+ │   ├── authRoutes.js     
+ │   └── taskRoutes.js    
  ├── controllers/
  │   ├── authController.js
  │   └── taskController.js
  ├── middleware/
- │   ├── auth.js           ### JWT authentication
+ │   ├── auth.js           
  │   └── ratelimiting.js
  ├── utils/
- │   └── crypto.js         ### Hashing & verification
+ │   └── crypto.js         
  ├── database/
- │   └── db.js             ### PostgreSQL connection & table setup
+ │   └── db.js             
  └── .env
