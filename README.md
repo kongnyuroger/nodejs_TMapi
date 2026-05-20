@@ -74,4 +74,4 @@ src/
  │   └── db.js             
  └── .env
 
- author : kongnyu roger Tafor
+ author : Kongnyu Roger Tafor
